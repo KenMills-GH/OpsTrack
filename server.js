@@ -1,9 +1,11 @@
-const express = require("express");
-const cors = require("cors");
-require("dotenv").config();
+import express from "express";
+import cors from "cors";
+import dotenv from "dotenv";
 
-// Importing the database connection test
-const { pool } = require("./config/db");
+// Importing the database connection test (Notice the .js extension!)
+import { pool } from "./config/db.js";
+
+dotenv.config();
 
 const app = express();
 

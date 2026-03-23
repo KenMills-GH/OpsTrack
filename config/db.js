@@ -1,5 +1,10 @@
-const { Pool } = require("pg");
-require("dotenv").config();
+import pg from "pg";
+import dotenv from "dotenv";
+
+// Initialize dotenv to read your .env file
+dotenv.config();
+
+const { Pool } = pg;
 
 // Initialize the pool using your .env variables
 const pool = new Pool({
@@ -20,4 +25,5 @@ pool.connect((err, client, release) => {
   if (client) release();
 });
 
-module.exports = { pool };
+// Export the pool using ES Module syntax
+export { pool };
