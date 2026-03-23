@@ -4,6 +4,8 @@ import dotenv from "dotenv";
 
 // Importing the database connection test (Notice the .js extension!)
 import { pool } from "./config/db.js";
+import userRoutes from "./routes/userRoutes.js";
+import { errorHandler } from "./middleware/errorHandler.js";
 
 dotenv.config();
 
@@ -18,6 +20,10 @@ app.use(express.json());
 app.get("/", (req, res) => {
   res.json({ message: "OpsTrack API is live and secure." });
 });
+// Mount the user routes to /api/users
+app.use("/api/users", userRoutes);
+
+app.use(errorHandler);
 
 // Booting up the server
 const PORT = process.env.PORT || 5000;
