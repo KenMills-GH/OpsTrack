@@ -31,6 +31,7 @@ export const loginOperator = async (req, res, next) => {
     const payload = {
       id: user.id,
       clearance_level: user.clearance_level,
+      rank: user.rank,
     };
 
     const token = jwt.sign(
