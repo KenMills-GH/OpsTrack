@@ -1,4 +1,5 @@
 import { pool } from "../config/db.js";
+import { logAction } from "../utils/auditLogger.js";
 
 // Get all tasks WITH the assigned operator's details
 export const getAllTasks = async (req, res, next) => {
@@ -22,6 +23,15 @@ export const createTask = async (req, res, next) => {
       `INSERT INTO tasks (title, description, priority_level, assigned_to) VALUES ($1, $2, $3, $4) RETURNING *;`,
       [title, description, priority_level, assigned_to],
     );
+
+    // --> FIRE THE LOGGER <--
+    await logAction(
+      req.user.id,
+      "CREATE",
+      `Task #${newTask.rows[0].id}`,
+      `Mission Title: ${title}`,
+    );
+
     res.status(201).json(newTask[0]);
   } catch (error) {
     next(error);
@@ -34,14 +44,30 @@ export const updateTask = async (req, res, next) => {
   const { status, priority_level, assigned_to } = req.body;
 
   try {
+    // 1. Use COALESCE to protect existing data during a partial update
     const updatedTask = await pool.query(
-      "UPDATE tasks SET status = $1, priority_level = $2, assigned_to = $3 WHERE id = $4 RETURNING *;",
+      `UPDATE tasks 
+       SET status = COALESCE($1, status), 
+           priority_level = COALESCE($2, priority_level), 
+           assigned_to = COALESCE($3, assigned_to) 
+       WHERE id = $4 
+       RETURNING *;`,
       [status, priority_level, assigned_to, id],
     );
 
     if (updatedTask.rows.length === 0) {
       return res.status(404).json({ message: "Task not found" });
     }
+
+    const finalTask = updatedTask.rows[0];
+
+    // --> FIRE THE LOGGER <--
+    await logAction(
+      req.user.id,
+      "UPDATE",
+      `Task #${id}`,
+      `Status: ${finalTask.status} | Priority: ${finalTask.priority_level} | Assigned to: ${finalTask.assigned_to}`,
+    );
 
     res.status(200).json(updatedTask.rows[0]);
   } catch (error) {
@@ -62,6 +88,14 @@ export const deleteTask = async (req, res, next) => {
     if (deletedTask.rows.length === 0) {
       return res.status(404).json({ message: "Task not found" });
     }
+
+    // --> FIRE THE LOGGER <--
+    await logAction(
+      req.user.id,
+      "DELETE",
+      `Task #${id}`,
+      `Permanently scrubbed mission: ${deletedTask.rows[0].title}`,
+    );
 
     res.status(200).json({
       message: "Task successfully deleted",
