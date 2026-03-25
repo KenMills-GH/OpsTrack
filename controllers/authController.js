@@ -8,7 +8,7 @@ export const loginOperator = async (req, res, next) => {
   try {
     // 1. Locate the operator by email
     const userResult = await pool.query(
-      `SELECT id, name, rank, clearance_level, password
+      `SELECT id, name, rank, role,  clearance_level, password
        FROM users
        WHERE email = $1;`,
       [email],
@@ -33,7 +33,9 @@ export const loginOperator = async (req, res, next) => {
     const payload = {
       id: user.id,
       clearance_level: user.clearance_level,
+      role: user.role,
       rank: user.rank,
+      name: user.name,
     };
 
     const token = jwt.sign(
@@ -48,6 +50,7 @@ export const loginOperator = async (req, res, next) => {
       token: token,
       operator: {
         id: user.id,
+        role: user.role,
         name: user.name,
         rank: user.rank,
         clearance_level: user.clearance_level,

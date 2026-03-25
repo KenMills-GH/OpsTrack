@@ -1,24 +1,38 @@
 import { pool } from "../config/db.js";
 
-export const findAllTasks = async ({ limit, offset }) => {
-  // We don't need a 'client' here because there is no transaction
-  const result = await pool.query(
-    `SELECT
-       t.id,
-       t.title,
-       t.description,
-       t.status,
-       t.priority_level,
-       t.assigned_to,
-       t.created_at,
-       u.name as assignee_name
-     FROM tasks t 
-     LEFT JOIN users u ON t.assigned_to = u.id 
-     ORDER BY t.created_at DESC
-     LIMIT $1 OFFSET $2;`,
-    [limit, offset],
-  );
-  return result.rows;
+// OpsTrack-api/repositories/taskRepository.js
+
+export const findAllTasks = async (user, { limit, offset }) => {
+  // BRANCH 1: The Commander's View (TOP_SECRET sees the entire board)
+  if (user.role === "ADMIN") {
+    const result = await pool.query(
+      `SELECT 
+        t.id, t.title, t.description, t.status, t.priority_level, 
+        t.assigned_to, t.created_at, u.name as assignee_name
+       FROM tasks t
+       LEFT JOIN users u ON t.assigned_to = u.id
+       ORDER BY t.created_at DESC
+       LIMIT $1 OFFSET $2;`,
+      [limit, offset],
+    );
+    return result.rows;
+  }
+
+  // BRANCH 2: The Operator's View (SECRET only sees their assigned missions)
+  else {
+    const result = await pool.query(
+      `SELECT 
+        t.id, t.title, t.description, t.status, t.priority_level, 
+        t.assigned_to, t.created_at, u.name as assignee_name
+       FROM tasks t
+       LEFT JOIN users u ON t.assigned_to = u.id
+       WHERE t.assigned_to = $1   
+       ORDER BY t.created_at DESC
+       LIMIT $2 OFFSET $3;`,
+      [user.id, limit, offset],
+    );
+    return result.rows;
+  }
 };
 
 export const countTasks = async () => {

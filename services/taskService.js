@@ -8,9 +8,9 @@ import {
   removeTask as removeTaskFromDb,
 } from "../repositories/taskRepository.js";
 
-export const getAllTasks = async ({ limit, offset }) => {
+export const getAllTasks = async (user, { limit, offset }) => {
   const [tasks, total] = await Promise.all([
-    findAllTasks({ limit, offset }),
+    findAllTasks(user, { limit, offset }),
     countTasks(),
   ]);
 

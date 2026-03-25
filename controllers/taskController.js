@@ -13,7 +13,9 @@ export const getAllTasks = async (req, res, next) => {
       100,
     );
     const offset = Math.max(parseInt(req.query.offset, 10) || 0, 0);
-    const tasks = await getAllTasksService({ limit, offset });
+    // 1. Grab the operator's data that the auth middleware attached
+    const user = req.user;
+    const tasks = await getAllTasksService(user, { limit, offset });
     res.status(200).json(tasks);
   } catch (error) {
     next(error);
