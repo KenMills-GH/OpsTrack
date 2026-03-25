@@ -8,7 +8,9 @@ export const loginOperator = async (req, res, next) => {
   try {
     // 1. Locate the operator by email
     const userResult = await pool.query(
-      "SELECT * FROM users WHERE email = $1;",
+      `SELECT id, name, rank, clearance_level, password
+       FROM users
+       WHERE email = $1;`,
       [email],
     );
 

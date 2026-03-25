@@ -1,14 +1,20 @@
-import { pool } from "../config/db.js";
-import { logAction } from "../utils/auditLogger.js";
+import {
+  getAllTasks as getAllTasksService,
+  createTask as createTaskService,
+  updateTask as updateTaskService,
+  removeTask as removeTaskService,
+} from "../services/taskService.js";
 
 // Get all tasks WITH the assigned operator's details
 export const getAllTasks = async (req, res, next) => {
   try {
-    const query =
-      " SELECT tasks.id, tasks.title, tasks.status, tasks.priority_level, users.rank AS assignee_rank, users.name AS assignee_name FROM tasks LEFT JOIN users ON tasks.assigned_to = users.id ORDER BY tasks.id ASC;";
-
-    const result = await pool.query(query);
-    res.status(200).json(result.rows);
+    const limit = Math.min(
+      Math.max(parseInt(req.query.limit, 10) || 50, 1),
+      100,
+    );
+    const offset = Math.max(parseInt(req.query.offset, 10) || 0, 0);
+    const tasks = await getAllTasksService({ limit, offset });
+    res.status(200).json(tasks);
   } catch (error) {
     next(error);
   }
@@ -16,92 +22,47 @@ export const getAllTasks = async (req, res, next) => {
 
 // Create a new task and assign it
 export const createTask = async (req, res, next) => {
-  const { title, description, priority_level, assigned_to } = req.body;
-
   try {
-    const newTask = await pool.query(
-      `INSERT INTO tasks (title, description, priority_level, assigned_to) VALUES ($1, $2, $3, $4) RETURNING *;`,
-      [title, description, priority_level, assigned_to],
-    );
+    // 1. Extract network data
+    const taskData = req.body;
+    const operatorId = req.user.id; // Extracted from your JWT auth middleware
 
-    // --> FIRE THE LOGGER <--
-    await logAction(
-      req.user.id,
-      "CREATE",
-      `Task #${newTask.rows[0].id}`,
-      `Mission Title: ${title}`,
-    );
+    // 2. Hand off to the Business Layer
+    const newTask = await createTaskService(taskData, operatorId);
 
-    res.status(201).json(newTask[0]);
+    // 3. Send the HTTP response
+    res.status(201).json(newTask);
   } catch (error) {
-    next(error);
+    next(error); // Pass to your global error handler
   }
 };
 
 // Update a task (e.g., changing status or reassigning)
 export const updateTask = async (req, res, next) => {
-  const { id } = req.params;
-  const { status, priority_level, assigned_to } = req.body;
-
   try {
-    // 1. Use COALESCE to protect existing data during a partial update
-    const updatedTask = await pool.query(
-      `UPDATE tasks 
-       SET status = COALESCE($1, status), 
-           priority_level = COALESCE($2, priority_level), 
-           assigned_to = COALESCE($3, assigned_to) 
-       WHERE id = $4 
-       RETURNING *;`,
-      [status, priority_level, assigned_to, id],
+    const updatedTask = await updateTaskService(
+      req.params.id,
+      req.body,
+      req.user.id,
     );
-
-    if (updatedTask.rows.length === 0) {
+    res.status(200).json(updatedTask);
+  } catch (error) {
+    if (error.message === "TASK_NOT_FOUND") {
       return res.status(404).json({ message: "Task not found" });
     }
-
-    const finalTask = updatedTask.rows[0];
-
-    // --> FIRE THE LOGGER <--
-    await logAction(
-      req.user.id,
-      "UPDATE",
-      `Task #${id}`,
-      `Status: ${finalTask.status} | Priority: ${finalTask.priority_level} | Assigned to: ${finalTask.assigned_to}`,
-    );
-
-    res.status(200).json(updatedTask.rows[0]);
-  } catch (error) {
     next(error);
   }
 };
 
 // Delete a task
 export const deleteTask = async (req, res, next) => {
-  const { id } = req.params;
-
   try {
-    const deletedTask = await pool.query(
-      "DELETE FROM tasks WHERE id = $1 RETURNING *;",
-      [id],
-    );
-
-    if (deletedTask.rows.length === 0) {
+    await removeTaskService(req.params.id, req.user.id);
+    res.status(200).json({ message: "Task successfully purged from system." });
+  } catch (error) {
+    if (error.message === "TASK_NOT_FOUND") {
       return res.status(404).json({ message: "Task not found" });
     }
-
-    // --> FIRE THE LOGGER <--
-    await logAction(
-      req.user.id,
-      "DELETE",
-      `Task #${id}`,
-      `Permanently scrubbed mission: ${deletedTask.rows[0].title}`,
-    );
-
-    res.status(200).json({
-      message: "Task successfully deleted",
-      deleted_task: deletedTask.rows[0],
-    });
-  } catch (error) {
     next(error);
   }
 };

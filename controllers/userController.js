@@ -1,14 +1,20 @@
-import { pool } from "../config/db.js";
-import bcrypt from "bcrypt";
+import {
+  getAllUsers as getAllUsersService,
+  createUser as createUserService,
+  updateUser as updateUserService,
+  removeUser as removeUserService,
+} from "../services/userService.js";
 
 // Fetch all personnel
 export const getAllUsers = async (req, res, next) => {
   try {
-    // Standard SQL query to fetch all rows from the users table
-    const result = await pool.query("SELECT * FROM users ORDER BY id ASC;");
-
-    // Send the rows back as a successful JSON response
-    res.status(200).json(result.rows);
+    const limit = Math.min(
+      Math.max(parseInt(req.query.limit, 10) || 50, 1),
+      100,
+    );
+    const offset = Math.max(parseInt(req.query.offset, 10) || 0, 0);
+    const roster = await getAllUsersService({ limit, offset });
+    res.status(200).json(roster);
   } catch (error) {
     next(error);
   }
@@ -16,31 +22,15 @@ export const getAllUsers = async (req, res, next) => {
 
 // Add a new operator (Secure Version)
 export const createUser = async (req, res, next) => {
-  const { name, rank, clearance_level, email, password } = req.body;
-
   try {
-    // 1. Generate a "salt" (random data added to the password before hashing)
-    const saltRounds = 10;
-    const salt = await bcrypt.genSalt(saltRounds);
-
-    // 2. Hash the plaintext password with the salt
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    // 3. Save the HASHED password to the database, never the real one
-    const newOperator = await pool.query(
-      `INSERT INTO users (name, rank, clearance_level, email, password) 
-       VALUES ($1, $2, $3, $4, $5) RETURNING id, name, rank, clearance_level, email, is_active;`,
-      [name, rank, clearance_level, email, hashedPassword],
-    );
-
-    // Notice how we DO NOT return the password in the JSON response!
-    res.status(201).json(newOperator.rows[0]);
+    const newUser = await createUserService(req.body, req.user.id);
+    res.status(201).json(newUser);
   } catch (error) {
-    // If the email already exists, PostgreSQL throws a unique constraint error (code 23505)
+    // 23505 is the exact PostgreSQL error code for a Unique Constraint Violation
     if (error.code === "23505") {
       return res
         .status(400)
-        .json({ message: "An operator with this email already exists." });
+        .json({ message: "Email is already registered to an operator." });
     }
     next(error);
   }
@@ -48,44 +38,28 @@ export const createUser = async (req, res, next) => {
 
 // Update an existing operator (e.g., promotion or clearance upgrade)
 export const updateUser = async (req, res, next) => {
-  const { id } = req.params; // Grabs the ID from the end of the URL
-  const { rank, clearance_level } = req.body; // Grabs the new data from Postman
-
   try {
-    const updatedOperator = await pool.query(
-      "UPDATE users SET rank = $1, clearance_level = $2 WHERE id = $3 RETURNING *;",
-      [rank, clearance_level, id],
+    const updatedUser = await updateUserService(
+      req.params.id,
+      req.body,
+      req.user.id,
     );
-
-    // If no rows were updated, the ID doesn't exist
-    if (updatedOperator.rows.length === 0) {
-      return res.status(404).json({ message: "Operator not found" });
-    }
-    res.status(200).json(updatedOperator.rows[0]);
+    res.status(200).json(updatedUser);
   } catch (error) {
+    if (error.message === "USER_NOT_FOUND")
+      return res.status(404).json({ message: "User not found" });
     next(error);
   }
 };
 
 // Remove an operator
 export const deleteUser = async (req, res, next) => {
-  const { id } = req.params;
-
   try {
-    const deletedOperator = await pool.query(
-      "DELETE FROM users WHERE id = $1 RETURNING *;",
-      [id],
-    );
-
-    if (deletedOperator.rows.length === 0) {
-      return res.status(404).json({ message: "Operator not found" });
-    }
-
-    res.status(200).json({
-      message: "Operator successfully removed from OpsTrack",
-      removed_user: deletedOperator.rows[0],
-    });
+    await removeUserService(req.params.id, req.user.id);
+    res.status(200).json({ message: "Operator successfully discharged." });
   } catch (error) {
+    if (error.message === "USER_NOT_FOUND")
+      return res.status(404).json({ message: "User not found" });
     next(error);
   }
 };

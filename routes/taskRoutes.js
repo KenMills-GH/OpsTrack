@@ -1,15 +1,20 @@
 import express from "express";
+
 import {
   getAllTasks,
   createTask,
   updateTask,
   deleteTask,
 } from "../controllers/taskController.js";
+
 import {
   verifyToken,
   checkClearance,
   checkRank,
-} from "../middleware/authMiddleware.js"; // <-- Update import
+} from "../middleware/authMiddleware.js";
+
+import { validateData } from "../middleware/validateMiddleware.js";
+import { createTaskSchema, updateTaskSchema } from "../schemas/taskSchema.js";
 
 const router = express.Router();
 
@@ -17,14 +22,15 @@ const router = express.Router();
 router.get("/", verifyToken, getAllTasks);
 
 // 2. Ticket Creation: Anyone with a token can submit a new mission
-router.post("/", verifyToken, createTask);
+router.post("/", verifyToken, validateData(createTaskSchema), createTask);
 
 // 3. Status Updates: Must be an NCO (SGT or higher) AND have a SECRET clearance
-router.put(
+router.patch(
   "/:id",
   verifyToken,
   checkClearance("SECRET"),
   checkRank("SGT"),
+  validateData(updateTaskSchema),
   updateTask,
 );
 
