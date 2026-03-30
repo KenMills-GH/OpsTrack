@@ -30,3 +30,23 @@ test("GET /api/users requires bearer token", async () => {
     "Access Denied: No valid token provided.",
   );
 });
+
+test("GET /api/tasks/1 requires bearer token", async () => {
+  const response = await request(app).get("/api/tasks/1");
+
+  assert.equal(response.status, 401);
+  assert.equal(
+    response.body.message,
+    "Access Denied: No valid token provided.",
+  );
+});
+
+test("GET /api/tasks/1/audit-logs requires bearer token", async () => {
+  const response = await request(app).get("/api/tasks/1/audit-logs");
+
+  assert.equal(response.status, 401);
+  assert.equal(
+    response.body.message,
+    "Access Denied: No valid token provided.",
+  );
+});

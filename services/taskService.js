@@ -3,15 +3,20 @@ import { logAction } from "../utils/auditLogger.js";
 import {
   findAllTasks,
   countTasks,
+  findTaskByIdForUser,
+  findTaskAuditLogs,
+  countTaskAuditLogs,
+  findAllAuditLogs,
+  countAllAuditLogs,
   createTask as createTaskInDb,
   updateTask as updateTaskInDb,
   removeTask as removeTaskFromDb,
 } from "../repositories/taskRepository.js";
 
-export const getAllTasks = async (user, { limit, offset }) => {
+export const getAllTasks = async (user, { limit, offset, sort, direction }) => {
   const [tasks, total] = await Promise.all([
-    findAllTasks(user, { limit, offset }),
-    countTasks(),
+    findAllTasks(user, { limit, offset, sort, direction }),
+    countTasks(user),
   ]);
 
   return {
@@ -21,6 +26,64 @@ export const getAllTasks = async (user, { limit, offset }) => {
       limit,
       offset,
       has_next: offset + tasks.length < total,
+    },
+  };
+};
+
+export const getTaskById = async (id, user) => {
+  const taskId = parseInt(id, 10);
+  const task = await findTaskByIdForUser(user, taskId);
+
+  if (!task) {
+    throw new Error("TASK_NOT_FOUND");
+  }
+
+  return task;
+};
+
+export const getTaskAuditLogs = async (id, user, { limit, offset }) => {
+  const taskId = parseInt(id, 10);
+  const task = await findTaskByIdForUser(user, taskId);
+
+  if (!task) {
+    throw new Error("TASK_NOT_FOUND");
+  }
+
+  const [logs, total] = await Promise.all([
+    findTaskAuditLogs(taskId, { limit, offset }),
+    countTaskAuditLogs(taskId),
+  ]);
+
+  return {
+    data: logs,
+    meta: {
+      total,
+      limit,
+      offset,
+      has_next: offset + logs.length < total,
+    },
+  };
+};
+
+export const getAllAuditLogs = async (user, { limit, offset }) => {
+  if (user.role !== "ADMIN") {
+    const error = new Error("FORBIDDEN_AUDIT_ACCESS");
+    error.status = 403;
+    throw error;
+  }
+
+  const [logs, total] = await Promise.all([
+    findAllAuditLogs({ limit, offset }),
+    countAllAuditLogs(),
+  ]);
+
+  return {
+    data: logs,
+    meta: {
+      total,
+      limit,
+      offset,
+      has_next: offset + logs.length < total,
     },
   };
 };
@@ -41,6 +104,7 @@ export const createTask = async (taskData, operatorId) => {
       "CREATE",
       `Task #${newTask.id}`,
       `Mission Title: ${newTask.title}`,
+      newTask.id,
     );
 
     await client.query("COMMIT");
@@ -69,6 +133,7 @@ export const updateTask = async (id, updateData, operatorId) => {
       "UPDATE",
       `Task #${id}`,
       `Status: ${updatedTask.status} | Priority: ${updatedTask.priority_level}`,
+      updatedTask.id,
     );
 
     await client.query("COMMIT");
@@ -95,6 +160,7 @@ export const removeTask = async (id, operatorId) => {
       "DELETE",
       `Task #${id}`,
       `Mission Scrubbed: ${deletedTask.title}`,
+      null,
     );
 
     await client.query("COMMIT");

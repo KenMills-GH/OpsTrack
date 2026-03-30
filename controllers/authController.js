@@ -1,38 +1,34 @@
 import { pool } from "../config/db.js";
-import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import { normalizeClearanceLevel } from "../constants/authConstants.js";
 
 export const loginOperator = async (req, res, next) => {
   const { email, password } = req.body;
 
   try {
-    // 1. Locate the operator by email
+    // 1. Locate the operator by email and verify password using pgcrypto
     const userResult = await pool.query(
-      `SELECT id, name, rank, role,  clearance_level, password
+      `SELECT id, name, rank, role, clearance_level, password
        FROM users
-       WHERE email = $1;`,
-      [email],
+       WHERE email = $1 AND password = crypt($2, password);`,
+      [email, password],
     );
 
-    // If no user comes back, the email is wrong
+    // If no user comes back, the email is wrong or password doesn't match
     if (userResult.rows.length === 0) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
     const user = userResult.rows[0];
-
-    // 2. Compare the provided password with the hashed database password
-    const isMatch = await bcrypt.compare(password, user.password);
-
-    if (!isMatch) {
-      return res.status(401).json({ message: "Invalid credentials" });
-    }
+    const normalizedClearanceLevel = normalizeClearanceLevel(
+      user.clearance_level,
+    );
 
     // 3. Construct the JSON Web Token (The Keycard)
     // We embed their ID and clearance level directly into the token payload
     const payload = {
       id: user.id,
-      clearance_level: user.clearance_level,
+      clearance_level: normalizedClearanceLevel,
       role: user.role,
       rank: user.rank,
       name: user.name,
@@ -53,7 +49,7 @@ export const loginOperator = async (req, res, next) => {
         role: user.role,
         name: user.name,
         rank: user.rank,
-        clearance_level: user.clearance_level,
+        clearance_level: normalizedClearanceLevel,
       },
     });
   } catch (error) {

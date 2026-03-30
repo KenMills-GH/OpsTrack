@@ -16,9 +16,6 @@ export const createUserSchema = z.object({
         "Invalid Rank designation. Must be an official recognized abbreviation.",
     }),
   }),
-  clearance_level: z.enum(CLEARANCE_LEVELS, {
-    errorMap: () => ({ message: "Invalid Clearance Level." }),
-  }),
 });
 
 export const updateUserSchema = z

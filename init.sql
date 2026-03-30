@@ -43,6 +43,7 @@ CREATE TABLE tasks (
 CREATE TABLE audit_logs (
     id SERIAL PRIMARY KEY,
     operator_id INT REFERENCES users(id) ON DELETE SET NULL,
+    task_id INT REFERENCES tasks(id) ON DELETE SET NULL,
     action VARCHAR(50) NOT NULL,
     resource VARCHAR(100) NOT NULL,
     details TEXT,
@@ -53,9 +54,9 @@ CREATE TABLE audit_logs (
 -- Populate the base operators with a default password of 'password123'
 INSERT INTO users (name, rank, clearance_level, email, password) VALUES 
 ('Jane Miller', 'SGT', 'SECRET', 'j.miller@opstrack.mil', crypt('password123', gen_salt('bf', 10))),
-('Marcus Vance', 'CW2', 'TOP SECRET', 'm.vance@opstrack.mil', crypt('password123', gen_salt('bf', 10))),
-('Kenneth Mills', 'SSG', 'TOP SECRET', 'k.mills@opstrack.mil', crypt('password123', gen_salt('bf', 10))),
-('Sarah Connor', 'CPT', 'TOP SECRET', 's.connor@opstrack.mil', crypt('password123', gen_salt('bf', 10)));
+('Marcus Vance', 'CW2', 'SECRET', 'm.vance@opstrack.mil', crypt('password123', gen_salt('bf', 10))),
+('Kenneth Mills', 'SSG', 'SECRET', 'k.mills@opstrack.mil', crypt('password123', gen_salt('bf', 10))),
+('Sarah Connor', 'CPT', 'SECRET', 's.connor@opstrack.mil', crypt('password123', gen_salt('bf', 10)));
 
 -- Populate an initial task
 INSERT INTO tasks (title, description, status, priority_level, assigned_to) VALUES 
@@ -68,4 +69,5 @@ CREATE INDEX idx_tasks_priority ON tasks(priority_level);
 CREATE INDEX idx_tasks_created_at ON tasks(created_at);
 
 CREATE INDEX idx_audit_logs_operator ON audit_logs(operator_id);
+CREATE INDEX idx_audit_logs_task_logged_at ON audit_logs(task_id, logged_at DESC);
 CREATE INDEX idx_audit_logs_logged_at ON audit_logs(logged_at);

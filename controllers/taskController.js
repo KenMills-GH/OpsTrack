@@ -1,5 +1,8 @@
 import {
   getAllTasks as getAllTasksService,
+  getAllAuditLogs as getAllAuditLogsService,
+  getTaskById as getTaskByIdService,
+  getTaskAuditLogs as getTaskAuditLogsService,
   createTask as createTaskService,
   updateTask as updateTaskService,
   removeTask as removeTaskService,
@@ -13,11 +16,80 @@ export const getAllTasks = async (req, res, next) => {
       100,
     );
     const offset = Math.max(parseInt(req.query.offset, 10) || 0, 0);
+
+    const VALID_SORT_FIELDS = new Set([
+      "id",
+      "status",
+      "priority",
+      "title",
+      "assignee",
+    ]);
+    const sort = VALID_SORT_FIELDS.has(req.query.sort) ? req.query.sort : "id";
+    const direction = req.query.direction === "desc" ? "desc" : "asc";
+
     // 1. Grab the operator's data that the auth middleware attached
     const user = req.user;
-    const tasks = await getAllTasksService(user, { limit, offset });
+    const tasks = await getAllTasksService(user, {
+      limit,
+      offset,
+      sort,
+      direction,
+    });
     res.status(200).json(tasks);
   } catch (error) {
+    next(error);
+  }
+};
+
+export const getTaskAuditLogs = async (req, res, next) => {
+  try {
+    const limit = Math.min(
+      Math.max(parseInt(req.query.limit, 10) || 20, 1),
+      100,
+    );
+    const offset = Math.max(parseInt(req.query.offset, 10) || 0, 0);
+    const logs = await getTaskAuditLogsService(req.params.id, req.user, {
+      limit,
+      offset,
+    });
+
+    res.status(200).json(logs);
+  } catch (error) {
+    if (error.message === "TASK_NOT_FOUND") {
+      return res.status(404).json({ message: "Task not found" });
+    }
+    next(error);
+  }
+};
+
+export const getAllAuditLogs = async (req, res, next) => {
+  try {
+    const limit = Math.min(
+      Math.max(parseInt(req.query.limit, 10) || 20, 1),
+      100,
+    );
+    const offset = Math.max(parseInt(req.query.offset, 10) || 0, 0);
+    const logs = await getAllAuditLogsService(req.user, { limit, offset });
+
+    res.status(200).json(logs);
+  } catch (error) {
+    if (error.message === "FORBIDDEN_AUDIT_ACCESS") {
+      return res.status(403).json({
+        message: "Command Denied: Admin role required for full audit access.",
+      });
+    }
+    next(error);
+  }
+};
+
+export const getTaskById = async (req, res, next) => {
+  try {
+    const task = await getTaskByIdService(req.params.id, req.user);
+    res.status(200).json(task);
+  } catch (error) {
+    if (error.message === "TASK_NOT_FOUND") {
+      return res.status(404).json({ message: "Task not found" });
+    }
     next(error);
   }
 };

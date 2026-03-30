@@ -1,5 +1,4 @@
 import { pool } from "../config/db.js";
-import bcrypt from "bcrypt";
 import {
   findAllUsers,
   countUsers,
@@ -31,12 +30,13 @@ export const createUser = async (userData, adminId) => {
   try {
     await client.query("BEGIN");
 
-    // 1. Business Logic: Hash the password before it ever touches the database
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(userData.password, saltRounds);
-
-    // Swap the plain-text password for the hashed one
-    const newUserData = { ...userData, password: hashedPassword };
+    // 1. Build user data without clearance_level and password hashing
+    // New users always start as UNCLASSIFIED (admins must patch to upgrade)
+    const newUserData = {
+      ...userData,
+      clearance_level: "UNCLASSIFIED",
+      // password will be hashed by the database via crypt()
+    };
 
     // 2. Data Layer: Save to PostgreSQL
     const newUser = await createUserInDb(client, newUserData);

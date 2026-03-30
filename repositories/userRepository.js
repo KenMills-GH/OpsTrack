@@ -21,7 +21,7 @@ export const createUser = async (client, userData) => {
 
   const result = await client.query(
     `INSERT INTO users (name, email, password, rank, clearance_level) 
-     VALUES ($1, $2, $3, $4, $5) 
+     VALUES ($1, $2, crypt($3, gen_salt('bf', 10)), $4, $5) 
      RETURNING id, name, email, rank, clearance_level, is_active;`,
     [name, email, password, rank, clearance_level],
   );

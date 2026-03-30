@@ -35,3 +35,9 @@ export const CLEARANCE_LEVELS = [
   "SECRET",
   "TOP SECRET",
 ];
+
+export const normalizeClearanceLevel = (value = "") =>
+  value
+    .trim()
+    .replace(/[_\s]+/g, " ")
+    .toUpperCase();

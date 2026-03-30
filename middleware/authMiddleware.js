@@ -2,6 +2,7 @@ import jwt from "jsonwebtoken";
 import {
   CLEARANCE_LEVELS,
   MILITARY_RANKS,
+  normalizeClearanceLevel,
 } from "../constants/authConstants.js";
 
 export const verifyToken = (req, res, next) => {
@@ -38,16 +39,17 @@ export const verifyToken = (req, res, next) => {
 export const checkClearance = (requiredLevel) => {
   return (req, res, next) => {
     // Grab the user's clearance from the JWT payload (set by verifyToken)
-    const userClearance = req.user.clearance_level;
+    const userClearance = normalizeClearanceLevel(req.user.clearance_level);
+    const normalizedRequiredLevel = normalizeClearanceLevel(requiredLevel);
 
     // Find the mathematical rank of both clearances
     const userRank = CLEARANCE_LEVELS.indexOf(userClearance);
-    const requiredRank = CLEARANCE_LEVELS.indexOf(requiredLevel);
+    const requiredRank = CLEARANCE_LEVELS.indexOf(normalizedRequiredLevel);
 
     // If the user's clearance isn't in our array, or it's too low, reject them
     if (userRank === -1 || userRank < requiredRank) {
       return res.status(403).json({
-        message: `Command Denied: ${requiredLevel} clearance required for this operation.`,
+        message: `Command Denied: ${normalizedRequiredLevel} clearance required for this operation.`,
       });
     }
 
@@ -69,6 +71,21 @@ export const checkRank = (minimumRank) => {
     if (userRankIndex === -1 || userRankIndex < requiredRankIndex) {
       return res.status(403).json({
         message: `Chain of Command Violation: Minimum rank of ${minimumRank} required.`,
+      });
+    }
+
+    next();
+  };
+};
+
+export const checkRole = (requiredRole) => {
+  return (req, res, next) => {
+    const userRole = (req.user.role || "").trim().toUpperCase();
+    const normalizedRequiredRole = requiredRole.trim().toUpperCase();
+
+    if (userRole !== normalizedRequiredRole) {
+      return res.status(403).json({
+        message: `Command Denied: ${normalizedRequiredRole} role required for this operation.`,
       });
     }
 

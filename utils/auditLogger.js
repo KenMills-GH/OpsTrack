@@ -4,12 +4,13 @@ export const logAction = async (
   action,
   resource,
   details,
+  taskId = null,
 ) => {
   try {
     await client.query(
-      `INSERT INTO audit_logs (operator_id, action, resource, details) 
-       VALUES ($1, $2, $3, $4);`,
-      [operatorId, action, resource, details],
+      `INSERT INTO audit_logs (operator_id, task_id, action, resource, details) 
+       VALUES ($1, $2, $3, $4, $5);`,
+      [operatorId, taskId, action, resource, details],
     );
   } catch (error) {
     console.error("CRITICAL: Audit Log Failure:", error.message);
