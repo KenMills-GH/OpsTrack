@@ -13,6 +13,10 @@ const pool = new Pool({
   database: process.env.DB_DATABASE,
   password: process.env.DB_PASSWORD,
   port: process.env.DB_PORT,
+  max: 20,
+  min: 2,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
 });
 
 // Immediately test the connection upon boot
@@ -23,6 +27,10 @@ pool.connect((err, client, release) => {
     console.log("Successfully connected to the PostgreSQL database.");
   }
   if (client) release();
+});
+
+pool.on("error", (error) => {
+  console.error("Unexpected idle database client error:", error);
 });
 
 // Export the pool using ES Module syntax

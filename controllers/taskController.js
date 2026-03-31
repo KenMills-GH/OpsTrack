@@ -7,15 +7,15 @@ import {
   updateTask as updateTaskService,
   removeTask as removeTaskService,
 } from "../services/taskService.js";
+import { parsePagination } from "../utils/pagination.js";
 
 // Get all tasks WITH the assigned operator's details
 export const getAllTasks = async (req, res, next) => {
   try {
-    const limit = Math.min(
-      Math.max(parseInt(req.query.limit, 10) || 50, 1),
-      100,
-    );
-    const offset = Math.max(parseInt(req.query.offset, 10) || 0, 0);
+    const { limit, offset } = parsePagination(req.query, {
+      limit: 50,
+      max: 100,
+    });
 
     const VALID_SORT_FIELDS = new Set([
       "id",
@@ -43,11 +43,10 @@ export const getAllTasks = async (req, res, next) => {
 
 export const getTaskAuditLogs = async (req, res, next) => {
   try {
-    const limit = Math.min(
-      Math.max(parseInt(req.query.limit, 10) || 20, 1),
-      100,
-    );
-    const offset = Math.max(parseInt(req.query.offset, 10) || 0, 0);
+    const { limit, offset } = parsePagination(req.query, {
+      limit: 20,
+      max: 100,
+    });
     const logs = await getTaskAuditLogsService(req.params.id, req.user, {
       limit,
       offset,
@@ -56,7 +55,9 @@ export const getTaskAuditLogs = async (req, res, next) => {
     res.status(200).json(logs);
   } catch (error) {
     if (error.message === "TASK_NOT_FOUND") {
-      return res.status(404).json({ message: "Task not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Task not found" });
     }
     next(error);
   }
@@ -64,17 +65,17 @@ export const getTaskAuditLogs = async (req, res, next) => {
 
 export const getAllAuditLogs = async (req, res, next) => {
   try {
-    const limit = Math.min(
-      Math.max(parseInt(req.query.limit, 10) || 20, 1),
-      100,
-    );
-    const offset = Math.max(parseInt(req.query.offset, 10) || 0, 0);
+    const { limit, offset } = parsePagination(req.query, {
+      limit: 20,
+      max: 100,
+    });
     const logs = await getAllAuditLogsService(req.user, { limit, offset });
 
     res.status(200).json(logs);
   } catch (error) {
     if (error.message === "FORBIDDEN_AUDIT_ACCESS") {
       return res.status(403).json({
+        success: false,
         message: "Command Denied: Admin role required for full audit access.",
       });
     }
@@ -88,7 +89,9 @@ export const getTaskById = async (req, res, next) => {
     res.status(200).json(task);
   } catch (error) {
     if (error.message === "TASK_NOT_FOUND") {
-      return res.status(404).json({ message: "Task not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Task not found" });
     }
     next(error);
   }
@@ -122,7 +125,9 @@ export const updateTask = async (req, res, next) => {
     res.status(200).json(updatedTask);
   } catch (error) {
     if (error.message === "TASK_NOT_FOUND") {
-      return res.status(404).json({ message: "Task not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Task not found" });
     }
     next(error);
   }
@@ -135,7 +140,9 @@ export const deleteTask = async (req, res, next) => {
     res.status(200).json({ message: "Task successfully purged from system." });
   } catch (error) {
     if (error.message === "TASK_NOT_FOUND") {
-      return res.status(404).json({ message: "Task not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Task not found" });
     }
     next(error);
   }

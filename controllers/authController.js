@@ -16,7 +16,9 @@ export const loginOperator = async (req, res, next) => {
 
     // If no user comes back, the email is wrong or password doesn't match
     if (userResult.rows.length === 0) {
-      return res.status(401).json({ message: "Invalid credentials" });
+      return res
+        .status(401)
+        .json({ success: false, message: "Invalid credentials" });
     }
 
     const user = userResult.rows[0];
@@ -24,7 +26,10 @@ export const loginOperator = async (req, res, next) => {
     if (!user.is_active) {
       return res
         .status(403)
-        .json({ message: "Account deactivated. Contact your administrator." });
+        .json({
+          success: false,
+          message: "Account deactivated. Contact your administrator.",
+        });
     }
     const normalizedClearanceLevel = normalizeClearanceLevel(
       user.clearance_level,
@@ -43,7 +48,7 @@ export const loginOperator = async (req, res, next) => {
     const token = jwt.sign(
       payload,
       process.env.JWT_SECRET,
-      { expiresIn: "8h" }, // Token expires after an 8-hour shift
+      { expiresIn: "8h", algorithm: "HS256" }, // Token expires after an 8-hour shift
     );
 
     // 4. Return the token and the operator profile (strictly omitting the password)

@@ -13,7 +13,10 @@ export const verifyToken = (req, res, next) => {
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return res
       .status(401)
-      .json({ message: "Access Denied: No valid token provided." });
+      .json({
+        success: false,
+        message: "Access Denied: No valid token provided.",
+      });
   }
 
   // 3. Extract just the token string (dropping the "Bearer " part)
@@ -21,7 +24,9 @@ export const verifyToken = (req, res, next) => {
 
   try {
     // 4. Cryptographically verify the token against your secret key
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET, {
+      algorithms: ["HS256"],
+    });
 
     // 5. Attach the decoded operator data (id, clearance_level) directly to the request
     // This allows your controllers to know EXACTLY who is making the request
@@ -31,7 +36,10 @@ export const verifyToken = (req, res, next) => {
     next();
   } catch (error) {
     // If the token is fake, altered, or expired (past the 8-hour shift)
-    res.status(403).json({ message: "Forbidden: Invalid or expired token." });
+    res.status(403).json({
+      success: false,
+      message: "Forbidden: Invalid or expired token.",
+    });
   }
 };
 
@@ -49,6 +57,7 @@ export const checkClearance = (requiredLevel) => {
     // If the user's clearance isn't in our array, or it's too low, reject them
     if (userRank === -1 || userRank < requiredRank) {
       return res.status(403).json({
+        success: false,
         message: `Command Denied: ${normalizedRequiredLevel} clearance required for this operation.`,
       });
     }
@@ -70,6 +79,7 @@ export const checkRank = (minimumRank) => {
     // If the rank isn't recognized, or is too low, reject the command
     if (userRankIndex === -1 || userRankIndex < requiredRankIndex) {
       return res.status(403).json({
+        success: false,
         message: `Chain of Command Violation: Minimum rank of ${minimumRank} required.`,
       });
     }
@@ -85,6 +95,7 @@ export const checkRole = (requiredRole) => {
 
     if (userRole !== normalizedRequiredRole) {
       return res.status(403).json({
+        success: false,
         message: `Command Denied: ${normalizedRequiredRole} role required for this operation.`,
       });
     }

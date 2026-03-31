@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import rateLimit from "express-rate-limit";
 import helmet from "helmet";
 import cors from "cors";
+import morgan from "morgan";
 import { fileURLToPath } from "url";
 
 // Route Imports
@@ -16,14 +17,37 @@ dotenv.config();
 
 const app = express();
 
+const REQUIRED_ENV_VARS = [
+  "DB_USER",
+  "DB_HOST",
+  "DB_DATABASE",
+  "DB_PASSWORD",
+  "JWT_SECRET",
+];
+
+const validateEnvironment = () => {
+  const missingVariables = REQUIRED_ENV_VARS.filter(
+    (envKey) => !process.env[envKey],
+  );
+
+  if (missingVariables.length > 0) {
+    throw new Error(
+      `Missing required environment variables: ${missingVariables.join(", ")}`,
+    );
+  }
+};
+
+validateEnvironment();
+
 /* ---- 1. SECURITY & PERIMETER DEFENSE ---- */
 // Helmet: Secures HTTP headers by hiding Express architecture
 app.use(helmet());
+app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
 
 // CORS: Restrict cross-origin traffic strictly to the frontend dashboard
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: process.env.CORS_ORIGIN || "http://localhost:5173",
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
     credentials: true,
   }),
@@ -58,7 +82,7 @@ app.use("/api", globalLimiter);
 
 /* ---- 2. PARSERS ---- */
 // Allows Express to read incoming JSON payloads
-app.use(express.json());
+app.use(express.json({ limit: "10kb" }));
 
 /* ---- 3. ROUTES ---- */
 // Base health check route
@@ -95,8 +119,34 @@ app.use(errorHandler);
 const PORT = process.env.PORT || 5000;
 
 if (fileURLToPath(import.meta.url) === process.argv[1]) {
-  app.listen(PORT, () => {
+  const server = app.listen(PORT, () => {
     console.log(`OpsTrack Server is running on port ${PORT}`);
+  });
+
+  const shutdown = async (signal) => {
+    console.log(`${signal} received. Shutting down gracefully...`);
+
+    server.close(async (serverError) => {
+      if (serverError) {
+        console.error("Error while closing HTTP server:", serverError);
+      }
+
+      try {
+        await pool.end();
+      } catch (poolError) {
+        console.error("Error while closing database pool:", poolError);
+      }
+
+      process.exit(serverError ? 1 : 0);
+    });
+  };
+
+  process.on("SIGTERM", () => {
+    void shutdown("SIGTERM");
+  });
+
+  process.on("SIGINT", () => {
+    void shutdown("SIGINT");
   });
 }
 

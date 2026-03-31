@@ -5,15 +5,15 @@ import {
   updateUser as updateUserService,
   removeUser as removeUserService,
 } from "../services/userService.js";
+import { parsePagination } from "../utils/pagination.js";
 
 // Fetch all personnel
 export const getAllUsers = async (req, res, next) => {
   try {
-    const limit = Math.min(
-      Math.max(parseInt(req.query.limit, 10) || 50, 1),
-      100,
-    );
-    const offset = Math.max(parseInt(req.query.offset, 10) || 0, 0);
+    const { limit, offset } = parsePagination(req.query, {
+      limit: 50,
+      max: 100,
+    });
     const roster = await getAllUsersService({ limit, offset });
     res.status(200).json(roster);
   } catch (error) {
@@ -24,7 +24,9 @@ export const getAllUsers = async (req, res, next) => {
 export const getUserById = async (req, res, next) => {
   try {
     const user = await getUserByIdService(req.params.id);
-    if (!user) return res.status(404).json({ message: "User not found" });
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
     res.status(200).json(user);
   } catch (error) {
     next(error);
@@ -41,7 +43,10 @@ export const createUser = async (req, res, next) => {
     if (error.code === "23505") {
       return res
         .status(400)
-        .json({ message: "Email is already registered to an operator." });
+        .json({
+          success: false,
+          message: "Email is already registered to an operator.",
+        });
     }
     next(error);
   }
@@ -58,7 +63,9 @@ export const updateUser = async (req, res, next) => {
     res.status(200).json(updatedUser);
   } catch (error) {
     if (error.message === "USER_NOT_FOUND")
-      return res.status(404).json({ message: "User not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     next(error);
   }
 };
@@ -70,7 +77,9 @@ export const deleteUser = async (req, res, next) => {
     res.status(200).json({ message: "Operator successfully deactivated." });
   } catch (error) {
     if (error.message === "USER_NOT_FOUND")
-      return res.status(404).json({ message: "User not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     next(error);
   }
 };
