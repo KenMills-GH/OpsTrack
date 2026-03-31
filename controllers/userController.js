@@ -1,5 +1,6 @@
 import {
   getAllUsers as getAllUsersService,
+  getUserById as getUserByIdService,
   createUser as createUserService,
   updateUser as updateUserService,
   removeUser as removeUserService,
@@ -20,10 +21,20 @@ export const getAllUsers = async (req, res, next) => {
   }
 };
 
-// Add a new operator (Secure Version)
+export const getUserById = async (req, res, next) => {
+  try {
+    const user = await getUserByIdService(req.params.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+    res.status(200).json(user);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Add a new operator
 export const createUser = async (req, res, next) => {
   try {
-    const newUser = await createUserService(req.body, req.user.id);
+    const newUser = await createUserService(req.body, req.user?.id ?? null);
     res.status(201).json(newUser);
   } catch (error) {
     // 23505 is the exact PostgreSQL error code for a Unique Constraint Violation
@@ -56,7 +67,7 @@ export const updateUser = async (req, res, next) => {
 export const deleteUser = async (req, res, next) => {
   try {
     await removeUserService(req.params.id, req.user.id);
-    res.status(200).json({ message: "Operator successfully discharged." });
+    res.status(200).json({ message: "Operator successfully deactivated." });
   } catch (error) {
     if (error.message === "USER_NOT_FOUND")
       return res.status(404).json({ message: "User not found" });

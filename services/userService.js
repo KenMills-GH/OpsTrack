@@ -2,6 +2,7 @@ import { pool } from "../config/db.js";
 import {
   findAllUsers,
   countUsers,
+  findUserById,
   createUser as createUserInDb,
   updateUser as updateUserInDb,
   removeUser as removeUserFromDb,
@@ -23,6 +24,12 @@ export const getAllUsers = async ({ limit, offset }) => {
       has_next: offset + users.length < total,
     },
   };
+};
+
+export const getUserById = async (id) => {
+  const parsedId = parseInt(id, 10);
+  if (Number.isNaN(parsedId)) return null;
+  return findUserById(parsedId);
 };
 
 export const createUser = async (userData, adminId) => {
@@ -89,19 +96,19 @@ export const removeUser = async (id, adminId) => {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
-    const deletedUser = await removeUserFromDb(client, id);
-    if (!deletedUser) throw new Error("USER_NOT_FOUND");
+    const deactivatedUser = await removeUserFromDb(client, id);
+    if (!deactivatedUser) throw new Error("USER_NOT_FOUND");
 
     await logAction(
       client,
       adminId,
       "DELETE_USER",
       `User #${id}`,
-      `Removed ${deletedUser.rank} ${deletedUser.name} from roster`,
+      `Deactivated ${deactivatedUser.rank} ${deactivatedUser.name} from roster`,
     );
 
     await client.query("COMMIT");
-    return deletedUser;
+    return deactivatedUser;
   } catch (error) {
     await client.query("ROLLBACK");
     throw error;

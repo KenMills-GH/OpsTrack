@@ -1,6 +1,7 @@
 import express from "express";
 import {
   getAllUsers,
+  getUserById,
   createUser,
   updateUser,
   deleteUser,
@@ -8,7 +9,7 @@ import {
 import {
   verifyToken,
   checkClearance,
-  checkRank,
+  checkRole,
 } from "../middleware/authMiddleware.js";
 import { validateData } from "../middleware/validateMiddleware.js";
 import { createUserSchema, updateUserSchema } from "../schemas/userSchema.js";
@@ -18,33 +19,22 @@ const router = express.Router();
 // 1. View Roster: Must be logged in and hold a SECRET clearance
 router.get("/", verifyToken, checkClearance("SECRET"), getAllUsers);
 
-// 2. Add Operator: Must be a Commander (CPT+ / TOP SECRET)
-router.post(
-  "/",
-  verifyToken,
-  checkClearance("TOP SECRET"),
-  checkRank("CPT"),
-  validateData(createUserSchema),
-  createUser,
-);
+// 2. Add Operator: Open registration
+router.post("/", validateData(createUserSchema), createUser);
 
-// 3. Edit Operator: Must be a Commander (CPT+ / TOP SECRET)
+// 2b. View Single Operator: Admin only
+router.get("/:id", verifyToken, checkRole("ADMIN"), getUserById);
+
+// 3. Edit Operator: Admin only
 router.patch(
   "/:id",
   verifyToken,
-  checkClearance("TOP SECRET"),
-  checkRank("CPT"),
+  checkRole("ADMIN"),
   validateData(updateUserSchema),
   updateUser,
 );
 
-// 4. Remove Operator: Must be a Commander (CPT+ / TOP SECRET)
-router.delete(
-  "/:id",
-  verifyToken,
-  checkClearance("TOP SECRET"),
-  checkRank("CPT"),
-  deleteUser,
-);
+// 4. Remove Operator: Admin only
+router.delete("/:id", verifyToken, checkRole("ADMIN"), deleteUser);
 
 export default router;

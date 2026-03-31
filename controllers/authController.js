@@ -8,9 +8,9 @@ export const loginOperator = async (req, res, next) => {
   try {
     // 1. Locate the operator by email and verify password using pgcrypto
     const userResult = await pool.query(
-      `SELECT id, name, rank, role, clearance_level, password
+      `SELECT id, name, rank, role, clearance_level, password, is_active
        FROM users
-       WHERE email = $1 AND password = crypt($2, password);`,
+       WHERE LOWER(email) = LOWER($1) AND password = crypt($2, password);`,
       [email, password],
     );
 
@@ -20,6 +20,12 @@ export const loginOperator = async (req, res, next) => {
     }
 
     const user = userResult.rows[0];
+
+    if (!user.is_active) {
+      return res
+        .status(403)
+        .json({ message: "Account deactivated. Contact your administrator." });
+    }
     const normalizedClearanceLevel = normalizeClearanceLevel(
       user.clearance_level,
     );

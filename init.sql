@@ -56,7 +56,7 @@ INSERT INTO users (name, rank, clearance_level, email, password) VALUES
 ('Jane Miller', 'SGT', 'SECRET', 'j.miller@opstrack.mil', crypt('password123', gen_salt('bf', 10))),
 ('Marcus Vance', 'CW2', 'SECRET', 'm.vance@opstrack.mil', crypt('password123', gen_salt('bf', 10))),
 ('Kenneth Mills', 'SSG', 'SECRET', 'k.mills@opstrack.mil', crypt('password123', gen_salt('bf', 10))),
-('Sarah Connor', 'CPT', 'SECRET', 's.connor@opstrack.mil', crypt('password123', gen_salt('bf', 10)));
+('Sarah Connor', 'CPT', 'TOP SECRET', 's.connor@opstrack.mil', crypt('password123', gen_salt('bf', 10)));
 
 -- Populate an initial task
 INSERT INTO tasks (title, description, status, priority_level, assigned_to) VALUES 
