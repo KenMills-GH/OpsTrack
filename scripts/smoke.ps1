@@ -1,6 +1,10 @@
+param(
+  [string]$BaseUrl = "http://localhost:5000"
+)
+
 $ErrorActionPreference = "Stop"
 
-$base = "http://localhost:5000"
+$base = $BaseUrl.TrimEnd('/')
 $apiBase = "$base/api"
 
 $startedProcess = $null
@@ -14,7 +18,7 @@ function Test-ApiUp {
   }
 }
 
-if (-not (Test-ApiUp)) {
+if ($base -eq "http://localhost:5000" -and -not (Test-ApiUp)) {
   Write-Host "[smoke] API not running. Starting temporary server..."
   $projectRoot = Split-Path -Parent $PSScriptRoot
   $startedProcess = Start-Process -FilePath "node" -ArgumentList "server.js" -WorkingDirectory $projectRoot -PassThru -WindowStyle Hidden
