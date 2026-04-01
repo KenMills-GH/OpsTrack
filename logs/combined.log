@@ -429,3 +429,4 @@
 {"level":"info","message":"User updated","metadata":{"metadata":{"requestId":"18134414-2061-4edb-998e-c9706d5fc290","updatedBy":8,"userId":"216"},"timestamp":"2026-04-01 15:06:00"}}
 {"level":"warn","message":"Access denied: insufficient role","metadata":{"metadata":{"requestId":"4bcd1370-b8b6-4b41-9656-9a314222ff86","requiredRole":"ADMIN","userId":7,"userRole":"MEMBER"},"timestamp":"2026-04-01 15:06:00"}}
 {"level":"info","message":"OpsTrack Server is running on port 5000","metadata":{"metadata":{"environment":"development","port":"5000"},"timestamp":"2026-04-01 15:06:24"}}
+{"level":"info","message":"SIGINT received. Shutting down gracefully...","metadata":{"metadata":{"signal":"SIGINT"},"timestamp":"2026-04-01 15:29:34"}}
