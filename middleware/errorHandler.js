@@ -1,22 +1,34 @@
-export const errorHandler = (err, req, res, next) => {
-  // 1. Always log the critical details to the server terminal for the engineering team
-  console.error("🚨 SERVER ERROR 🚨");
-  console.error("Message:", err.message);
-  console.error("Stack:", err.stack);
+import { Logger } from "../utils/logger.js";
+import { ERROR_CODES } from "../constants/errorCodes.js";
 
-  // 2. Check the environment variables
-  // If we haven't explicitly set it to 'production', assume we are in 'development'
+export const errorHandler = (err, req, res, next) => {
+  // Extract request context for logging
+  const requestId = res.locals.requestId || "unknown";
+  const userId = req.user?.id || "anonymous";
   const environment = process.env.NODE_ENV || "development";
 
-  // 3. Sanitize the output based on the environment
+  // Log the full error with context
+  Logger.error("Unhandled error", {
+    error: err.message,
+    code: err.code || ERROR_CODES.SYS_INTERNAL_ERROR,
+    stack: err.stack,
+    requestId,
+    userId,
+    method: req.method,
+    path: req.path,
+  });
+
+  // Sanitize error response based on environment
   const clientMessage =
     environment === "production"
       ? "Internal Server Error. The engineering team has been notified."
       : err.message;
 
-  // 4. Send the response
+  // Send structured error response
   res.status(err.status || 500).json({
     success: false,
+    code: err.code || ERROR_CODES.SYS_INTERNAL_ERROR,
     message: clientMessage,
+    requestId, // Include request ID for client reference/support
   });
 };

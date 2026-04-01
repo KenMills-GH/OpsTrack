@@ -12,6 +12,8 @@ import taskRoutes from "./routes/taskRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import { pool } from "./config/db.js";
+import { requestIdMiddleware } from "./middleware/requestIdMiddleware.js";
+import { Logger } from "./utils/logger.js";
 
 dotenv.config();
 
@@ -42,6 +44,11 @@ validateEnvironment();
 /* ---- 1. SECURITY & PERIMETER DEFENSE ---- */
 // Helmet: Secures HTTP headers by hiding Express architecture
 app.use(helmet());
+
+// Request ID: Attach correlation IDs for request tracing
+app.use(requestIdMiddleware);
+
+// Morgan: High-level request logging (complements structured Winston logging)
 app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
 
 // CORS: Restrict cross-origin traffic strictly to the frontend dashboard
@@ -67,14 +74,22 @@ const globalLimiter = rateLimit({
 });
 
 // Rate Limiting: High-Security Chokepoint (Max 5 login attempts / 15 mins)
+const isAutomatedTestRun =
+  process.execArgv.includes("--test") ||
+  process.env.NODE_ENV === "test" ||
+  process.env.npm_lifecycle_event === "test";
+const authLimiterMax = isAutomatedTestRun ? 100 : 5;
+
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 5,
+  max: authLimiterMax,
   message: {
     success: false,
     message:
       "Too many failed authentication attempts. Account locked for 15 minutes.",
   },
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 
 // Apply the global limiter to all routes that start with /api
@@ -120,21 +135,33 @@ const PORT = process.env.PORT || 5000;
 
 if (fileURLToPath(import.meta.url) === process.argv[1]) {
   const server = app.listen(PORT, () => {
-    console.log(`OpsTrack Server is running on port ${PORT}`);
+    Logger.info(`OpsTrack Server is running on port ${PORT}`, {
+      port: PORT,
+      environment: process.env.NODE_ENV,
+    });
   });
 
   const shutdown = async (signal) => {
-    console.log(`${signal} received. Shutting down gracefully...`);
+    Logger.info(`${signal} received. Shutting down gracefully...`, {
+      signal,
+    });
 
     server.close(async (serverError) => {
       if (serverError) {
-        console.error("Error while closing HTTP server:", serverError);
+        Logger.error("Error while closing HTTP server", {
+          error: serverError.message,
+          stack: serverError.stack,
+        });
       }
 
       try {
         await pool.end();
+        Logger.info("Database pool closed successfully");
       } catch (poolError) {
-        console.error("Error while closing database pool:", poolError);
+        Logger.error("Error while closing database pool", {
+          error: poolError.message,
+          stack: poolError.stack,
+        });
       }
 
       process.exit(serverError ? 1 : 0);

@@ -1,6 +1,8 @@
 import { pool } from "../config/db.js";
 import jwt from "jsonwebtoken";
 import { normalizeClearanceLevel } from "../constants/authConstants.js";
+import { ERROR_CODES } from "../constants/errorCodes.js";
+import { Logger } from "../utils/logger.js";
 
 export const loginOperator = async (req, res, next) => {
   const { email, password } = req.body;
@@ -16,20 +18,23 @@ export const loginOperator = async (req, res, next) => {
 
     // If no user comes back, the email is wrong or password doesn't match
     if (userResult.rows.length === 0) {
-      return res
-        .status(401)
-        .json({ success: false, message: "Invalid credentials" });
+      Logger.warn("Login failed: invalid credentials", { email, requestId: res.locals.requestId });
+      return res.status(401).json({
+        success: false,
+        code: ERROR_CODES.AUTH_INVALID_CREDENTIALS,
+        message: "Invalid credentials",
+      });
     }
 
     const user = userResult.rows[0];
 
     if (!user.is_active) {
-      return res
-        .status(403)
-        .json({
-          success: false,
-          message: "Account deactivated. Contact your administrator.",
-        });
+      Logger.warn("Login denied: account deactivated", { userId: user.id, requestId: res.locals.requestId });
+      return res.status(403).json({
+        success: false,
+        code: ERROR_CODES.AUTH_ACCOUNT_DEACTIVATED,
+        message: "Account deactivated. Contact your administrator.",
+      });
     }
     const normalizedClearanceLevel = normalizeClearanceLevel(
       user.clearance_level,

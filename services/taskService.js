@@ -120,18 +120,23 @@ export const createTask = async (taskData, operatorId) => {
 };
 
 export const updateTask = async (id, updateData, operatorId) => {
+  const taskId = parseInt(id, 10);
+  if (!Number.isInteger(taskId) || taskId <= 0) {
+    throw new Error("INVALID_TASK_ID");
+  }
+
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
 
-    const updatedTask = await updateTaskInDb(client, id, updateData);
+    const updatedTask = await updateTaskInDb(client, taskId, updateData);
     if (!updatedTask) throw new Error("TASK_NOT_FOUND");
 
     await logAction(
       client,
       operatorId,
       "UPDATE",
-      `Task #${id}`,
+      `Task #${taskId}`,
       `Status: ${updatedTask.status} | Priority: ${updatedTask.priority_level}`,
       updatedTask.id,
     );
@@ -147,21 +152,35 @@ export const updateTask = async (id, updateData, operatorId) => {
 };
 
 export const removeTask = async (id, operatorId) => {
+  const taskId = parseInt(id, 10);
+  if (!Number.isInteger(taskId) || taskId <= 0) {
+    throw new Error("INVALID_TASK_ID");
+  }
+
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
 
-    const deletedTask = await removeTaskFromDb(client, id);
-    if (!deletedTask) throw new Error("TASK_NOT_FOUND");
+    const taskLookupResult = await client.query(
+      "SELECT id, title FROM tasks WHERE id = $1 FOR UPDATE;",
+      [taskId],
+    );
+    const taskToDelete = taskLookupResult.rows[0];
+    if (!taskToDelete) {
+      throw new Error("TASK_NOT_FOUND");
+    }
 
     await logAction(
       client,
       operatorId,
       "DELETE",
-      `Task #${id}`,
-      `Mission Scrubbed: ${deletedTask.title}`,
-      null,
+      `Task #${taskId}`,
+      `Mission Scrubbed: ${taskToDelete.title}`,
+      taskId,
     );
+
+    const deletedTask = await removeTaskFromDb(client, taskId);
+    if (!deletedTask) throw new Error("TASK_NOT_FOUND");
 
     await client.query("COMMIT");
     return deletedTask;

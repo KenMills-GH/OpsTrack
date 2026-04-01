@@ -109,6 +109,44 @@ test("POST /api/auth/login accepts valid credentials", async () => {
   assert.equal(response.body.operator.role, "ADMIN");
 });
 
+test("POST /api/auth/login denies deactivated account with specific error code", async () => {
+  const newUserEmail = `integration.disabled.${uniqueSuffix}@opstrack.mil`;
+
+  const created = await request(app)
+    .post("/api/users")
+    .set("Authorization", `Bearer ${adminToken}`)
+    .send({
+      name: "Disabled Login User",
+      email: newUserEmail,
+      password: "password123",
+      rank: "SGT",
+    });
+
+  assert.equal(created.status, 201);
+  const userId = created.body.id;
+
+  const deactivated = await request(app)
+    .patch(`/api/users/${userId}`)
+    .set("Authorization", `Bearer ${adminToken}`)
+    .send({ is_active: false });
+
+  assert.equal(deactivated.status, 200);
+
+  const loginResponse = await request(app).post("/api/auth/login").send({
+    email: newUserEmail,
+    password: "password123",
+  });
+
+  assert.equal(loginResponse.status, 403);
+  assert.equal(loginResponse.body.success, false);
+  assert.equal(
+    loginResponse.body.code,
+    "ERR_AUTH_ACCOUNT_DEACTIVATED",
+  );
+
+  await pool.query("DELETE FROM users WHERE id = $1", [userId]);
+});
+
 test("GET /api/tasks returns paginated response for authenticated member", async () => {
   const response = await request(app)
     .get("/api/tasks?limit=5&offset=0")
@@ -123,6 +161,21 @@ test("GET /api/tasks/audit-logs denies non-admin users", async () => {
   const response = await request(app)
     .get("/api/tasks/audit-logs")
     .set("Authorization", `Bearer ${memberToken}`);
+
+  assert.equal(response.status, 403);
+  assert.equal(response.body.success, false);
+});
+
+test("POST /api/users requires admin role", async () => {
+  const response = await request(app)
+    .post("/api/users")
+    .set("Authorization", `Bearer ${memberToken}`)
+    .send({
+      name: "Unauthorized User",
+      email: `integration.unauth.${uniqueSuffix}@opstrack.mil`,
+      password: "password123",
+      rank: "PVT",
+    });
 
   assert.equal(response.status, 403);
   assert.equal(response.body.success, false);
@@ -147,12 +200,15 @@ test("POST /api/tasks creates a task for authenticated member", async () => {
 test("POST /api/users creates a low-clearance operator", async () => {
   lowClearanceEmail = `integration.pvt.${uniqueSuffix}@opstrack.mil`;
 
-  const response = await request(app).post("/api/users").send({
-    name: "Integration Private",
-    email: lowClearanceEmail,
-    password: "password123",
-    rank: "PVT",
-  });
+  const response = await request(app)
+    .post("/api/users")
+    .set("Authorization", `Bearer ${adminToken}`)
+    .send({
+      name: "Integration Private",
+      email: lowClearanceEmail,
+      password: "password123",
+      rank: "PVT",
+    });
 
   assert.equal(response.status, 201);
   assert.equal(response.body.email, lowClearanceEmail);
@@ -204,4 +260,212 @@ test("GET /api/users allows admin and returns paginated roster", async () => {
   assert.equal(response.status, 200);
   assert.ok(Array.isArray(response.body.data));
   assert.equal(typeof response.body.meta.total, "number");
+});
+
+test("POST /api/users rejects duplicate email", async () => {
+  const duplicateEmail = `integration.dup.${uniqueSuffix}@opstrack.mil`;
+
+  const first = await request(app)
+    .post("/api/users")
+    .set("Authorization", `Bearer ${adminToken}`)
+    .send({
+      name: "First User",
+      email: duplicateEmail,
+      password: "password123",
+      rank: "PVT",
+    });
+
+  assert.equal(first.status, 201);
+
+  const second = await request(app)
+    .post("/api/users")
+    .set("Authorization", `Bearer ${adminToken}`)
+    .send({
+      name: "Second User",
+      email: duplicateEmail,
+      password: "password123",
+      rank: "PVT",
+    });
+
+  assert.equal(second.status, 400);
+  assert.equal(second.body.success, false);
+  assert.match(second.body.message, /already registered/i);
+
+  await pool.query("DELETE FROM users WHERE LOWER(email) = LOWER($1)", [
+    duplicateEmail,
+  ]);
+});
+
+test("GET /api/tasks/:id returns 404 for nonexistent task", async () => {
+  const response = await request(app)
+    .get("/api/tasks/999999")
+    .set("Authorization", `Bearer ${memberToken}`);
+
+  assert.equal(response.status, 404);
+  assert.equal(response.body.success, false);
+  assert.equal(response.body.message, "Task not found");
+});
+
+test("PATCH /api/tasks/:id returns 404 for nonexistent task", async () => {
+  const response = await request(app)
+    .patch("/api/tasks/999999")
+    .set("Authorization", `Bearer ${memberToken}`)
+    .send({ priority_level: "HIGH" });
+
+  assert.equal(response.status, 404);
+  assert.equal(response.body.success, false);
+});
+
+test("PATCH /api/tasks/:id returns 400 for invalid task id", async () => {
+  const response = await request(app)
+    .patch("/api/tasks/abc")
+    .set("Authorization", `Bearer ${memberToken}`)
+    .send({ priority_level: "HIGH" });
+
+  assert.equal(response.status, 400);
+  assert.equal(response.body.success, false);
+  assert.equal(response.body.message, "Invalid task id");
+});
+
+test("DELETE /api/tasks/:id returns 404 for nonexistent task", async () => {
+  const response = await request(app)
+    .delete("/api/tasks/999999")
+    .set("Authorization", `Bearer ${adminToken}`);
+
+  assert.equal(response.status, 404);
+  assert.equal(response.body.success, false);
+});
+
+test("DELETE /api/tasks/:id returns 400 for invalid task id", async () => {
+  const response = await request(app)
+    .delete("/api/tasks/abc")
+    .set("Authorization", `Bearer ${adminToken}`);
+
+  assert.equal(response.status, 400);
+  assert.equal(response.body.success, false);
+  assert.equal(response.body.message, "Invalid task id");
+});
+
+test("GET /api/users/:id requires admin role", async () => {
+  const response = await request(app)
+    .get("/api/users/1")
+    .set("Authorization", `Bearer ${memberToken}`);
+
+  assert.equal(response.status, 403);
+  assert.equal(response.body.success, false);
+});
+
+test("GET /api/users/:id returns 404 for nonexistent user", async () => {
+  const response = await request(app)
+    .get("/api/users/999999")
+    .set("Authorization", `Bearer ${adminToken}`);
+
+  assert.equal(response.status, 404);
+  assert.equal(response.body.success, false);
+});
+
+test("PATCH /api/users/:id updates user clearance and name", async () => {
+  const newUserEmail = `integration.updateable.${uniqueSuffix}@opstrack.mil`;
+
+  const created = await request(app)
+    .post("/api/users")
+    .set("Authorization", `Bearer ${adminToken}`)
+    .send({
+      name: "Before Update",
+      email: newUserEmail,
+      password: "password123",
+      rank: "SGT",
+    });
+
+  assert.equal(created.status, 201);
+  const userId = created.body.id;
+
+  const updated = await request(app)
+    .patch(`/api/users/${userId}`)
+    .set("Authorization", `Bearer ${adminToken}`)
+    .send({
+      name: "After Update",
+      clearance_level: "SECRET",
+    });
+
+  assert.equal(updated.status, 200);
+  assert.equal(updated.body.name, "After Update");
+  assert.equal(updated.body.clearance_level, "SECRET");
+
+  await pool.query("DELETE FROM users WHERE id = $1", [userId]);
+});
+
+test("PATCH /api/users/:id toggles is_active status", async () => {
+  const newUserEmail = `integration.deactivate.${uniqueSuffix}@opstrack.mil`;
+
+  const created = await request(app)
+    .post("/api/users")
+    .set("Authorization", `Bearer ${adminToken}`)
+    .send({
+      name: "Deactivatable User",
+      email: newUserEmail,
+      password: "password123",
+      rank: "CPL",
+    });
+
+  assert.equal(created.status, 201);
+  const userId = created.body.id;
+  assert.equal(created.body.is_active, true);
+
+  const deactivated = await request(app)
+    .patch(`/api/users/${userId}`)
+    .set("Authorization", `Bearer ${adminToken}`)
+    .send({ is_active: false });
+
+  assert.equal(deactivated.status, 200);
+  assert.equal(deactivated.body.is_active, false);
+
+  await pool.query("DELETE FROM users WHERE id = $1", [userId]);
+});
+
+test("DELETE /api/users/:id requires admin role", async () => {
+  const response = await request(app)
+    .delete("/api/users/1")
+    .set("Authorization", `Bearer ${memberToken}`);
+
+  assert.equal(response.status, 403);
+  assert.equal(response.body.success, false);
+});
+
+test("GET /tasks/:id/audit-logs captures create action", async () => {
+  if (!createdTaskId) return;
+
+  const response = await request(app)
+    .get(`/api/tasks/${createdTaskId}/audit-logs`)
+    .set("Authorization", `Bearer ${memberToken}`);
+
+  assert.equal(response.status, 200);
+  assert.ok(Array.isArray(response.body.data));
+  assert.ok(response.body.data.length > 0);
+
+  const createLog = response.body.data.find((log) => log.action === "CREATE");
+  assert.ok(createLog);
+  assert.equal(createLog.resource, `Task #${createdTaskId}`);
+});
+
+test("GET /api/tasks/audit-logs admin view returns full system log", async () => {
+  const response = await request(app)
+    .get("/api/tasks/audit-logs?limit=10&offset=0")
+    .set("Authorization", `Bearer ${adminToken}`);
+
+  assert.equal(response.status, 200);
+  assert.ok(Array.isArray(response.body.data));
+  assert.ok(response.body.meta.total > 0);
+});
+
+test("PATCH with empty object rejected", async () => {
+  if (!createdTaskId) return;
+
+  const response = await request(app)
+    .patch(`/api/tasks/${createdTaskId}`)
+    .set("Authorization", `Bearer ${memberToken}`)
+    .send({});
+
+  assert.equal(response.status, 400);
+  assert.equal(response.body.success, false);
 });

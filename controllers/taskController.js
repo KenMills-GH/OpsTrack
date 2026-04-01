@@ -8,6 +8,8 @@ import {
   removeTask as removeTaskService,
 } from "../services/taskService.js";
 import { parsePagination } from "../utils/pagination.js";
+import { ERROR_CODES } from "../constants/errorCodes.js";
+import { Logger } from "../utils/logger.js";
 
 // Get all tasks WITH the assigned operator's details
 export const getAllTasks = async (req, res, next) => {
@@ -55,9 +57,16 @@ export const getTaskAuditLogs = async (req, res, next) => {
     res.status(200).json(logs);
   } catch (error) {
     if (error.message === "TASK_NOT_FOUND") {
-      return res
-        .status(404)
-        .json({ success: false, message: "Task not found" });
+      Logger.warn("Task not found", {
+        taskId: req.params.id,
+        userId: req.user.id,
+        requestId: res.locals.requestId,
+      });
+      return res.status(404).json({
+        success: false,
+        code: ERROR_CODES.RES_NOT_FOUND,
+        message: "Task not found",
+      });
     }
     next(error);
   }
@@ -74,8 +83,13 @@ export const getAllAuditLogs = async (req, res, next) => {
     res.status(200).json(logs);
   } catch (error) {
     if (error.message === "FORBIDDEN_AUDIT_ACCESS") {
+      Logger.warn("Audit access denied: non-admin user", {
+        userId: req.user.id,
+        requestId: res.locals.requestId,
+      });
       return res.status(403).json({
         success: false,
+        code: ERROR_CODES.AUTHZ_INSUFFICIENT_ROLE,
         message: "Command Denied: Admin role required for full audit access.",
       });
     }
@@ -89,9 +103,16 @@ export const getTaskById = async (req, res, next) => {
     res.status(200).json(task);
   } catch (error) {
     if (error.message === "TASK_NOT_FOUND") {
-      return res
-        .status(404)
-        .json({ success: false, message: "Task not found" });
+      Logger.warn("Task not found", {
+        taskId: req.params.id,
+        userId: req.user.id,
+        requestId: res.locals.requestId,
+      });
+      return res.status(404).json({
+        success: false,
+        code: ERROR_CODES.RES_NOT_FOUND,
+        message: "Task not found",
+      });
     }
     next(error);
   }
@@ -124,10 +145,30 @@ export const updateTask = async (req, res, next) => {
     );
     res.status(200).json(updatedTask);
   } catch (error) {
+    if (error.message === "INVALID_TASK_ID") {
+      Logger.warn("Invalid task id during update", {
+        taskId: req.params.id,
+        userId: req.user.id,
+        requestId: res.locals.requestId,
+      });
+      return res.status(400).json({
+        success: false,
+        code: ERROR_CODES.VAL_INVALID_PAYLOAD,
+        message: "Invalid task id",
+      });
+    }
+
     if (error.message === "TASK_NOT_FOUND") {
-      return res
-        .status(404)
-        .json({ success: false, message: "Task not found" });
+      Logger.warn("Task not found during update", {
+        taskId: req.params.id,
+        userId: req.user.id,
+        requestId: res.locals.requestId,
+      });
+      return res.status(404).json({
+        success: false,
+        code: ERROR_CODES.RES_NOT_FOUND,
+        message: "Task not found",
+      });
     }
     next(error);
   }
@@ -139,10 +180,30 @@ export const deleteTask = async (req, res, next) => {
     await removeTaskService(req.params.id, req.user.id);
     res.status(200).json({ message: "Task successfully purged from system." });
   } catch (error) {
+    if (error.message === "INVALID_TASK_ID") {
+      Logger.warn("Invalid task id during delete", {
+        taskId: req.params.id,
+        userId: req.user.id,
+        requestId: res.locals.requestId,
+      });
+      return res.status(400).json({
+        success: false,
+        code: ERROR_CODES.VAL_INVALID_PAYLOAD,
+        message: "Invalid task id",
+      });
+    }
+
     if (error.message === "TASK_NOT_FOUND") {
-      return res
-        .status(404)
-        .json({ success: false, message: "Task not found" });
+      Logger.warn("Task not found during delete", {
+        taskId: req.params.id,
+        userId: req.user.id,
+        requestId: res.locals.requestId,
+      });
+      return res.status(404).json({
+        success: false,
+        code: ERROR_CODES.RES_NOT_FOUND,
+        message: "Task not found",
+      });
     }
     next(error);
   }

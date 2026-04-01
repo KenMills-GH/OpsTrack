@@ -16,7 +16,7 @@ export const createTaskSchema = z.object({
 export const updateTaskSchema = z
   .object({
     status: z
-      .enum(["PENDING", "IN_PROGRESS", "COMPLETED", "ARCHIVED"])
+      .enum(["PENDING", "ACTIVE", "RESOLVED"])
       .optional(),
     priority_level: z.enum(["LOW", "MEDIUM", "HIGH", "CRITICAL"]).optional(),
     assigned_to: z.number().int().positive().optional(),

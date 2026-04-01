@@ -19,8 +19,14 @@ const router = express.Router();
 // 1. View Roster: Must be logged in and hold a SECRET clearance
 router.get("/", verifyToken, checkClearance("SECRET"), getAllUsers);
 
-// 2. Add Operator: Open registration
-router.post("/", validateData(createUserSchema), createUser);
+// 2. Add Operator: Admin only
+router.post(
+  "/",
+  verifyToken,
+  checkRole("ADMIN"),
+  validateData(createUserSchema),
+  createUser,
+);
 
 // 2b. View Single Operator: Admin only
 router.get("/:id", verifyToken, checkRole("ADMIN"), getUserById);
