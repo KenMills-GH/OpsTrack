@@ -21,17 +21,17 @@ This backend is the primary engineering focus of the project and is designed to 
 
 ## Demo Access
 
-Pre-seeded demo credentials for role validation:
+Pre-seeded verified credentials for role validation:
 
 ### Admin Access
 
-- **Email:** `op10@opstrack.mil`
+- **Email:** `k.mills@opstrack.mil`
 - **Password:** `password123`
 - **Role:** `ADMIN`
 
 ### Member Access
 
-- **Email:** `op11@opstrack.mil`
+- **Email:** `j.miller@opstrack.mil`
 - **Password:** `password123`
 - **Role:** `MEMBER`
 

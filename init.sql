@@ -76,7 +76,7 @@ INSERT INTO users (name, rank, clearance_level, role, email, password) VALUES
 ('Sarah Connor', 'CPT', 'TOP SECRET', 'ADMIN', 's.connor@opstrack.mil', crypt('password123', gen_salt('bf', 10)));
 
 -- B. Inject 50 Dummy Operators for UI Stress Testing
--- Using a hardcoded bcrypt hash for 'password123' so the script runs instantly
+-- All generated demo operators use the password 'password123'
 INSERT INTO users (name, rank, clearance_level, role, email, password)
 SELECT 
     'Mock Operator ' || i,
@@ -84,7 +84,7 @@ SELECT
     (ARRAY['CONFIDENTIAL', 'SECRET', 'TOP SECRET'])[floor(random() * 3 + 1)],
     CASE WHEN i % 10 = 0 THEN 'ADMIN' ELSE 'MEMBER' END,
     'op' || i || '@opstrack.mil',
-    '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjIQ68Y.Ry' 
+    crypt('password123', gen_salt('bf', 10))
 FROM generate_series(1, 50) as i;
 
 -- C. Inject 50 Dummy Tasks for the Kanban Board
