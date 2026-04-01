@@ -399,3 +399,33 @@
 {"level":"warn","message":"Access denied: insufficient role","metadata":{"metadata":{"requestId":"ed46e374-1815-43a7-bc5c-35ded54a9664","requiredRole":"ADMIN","userId":7,"userRole":"MEMBER"},"timestamp":"2026-04-01 13:39:00"}}
 {"level":"info","message":"OpsTrack Server is running on port 5000","metadata":{"metadata":{"environment":"development","port":"5000"},"timestamp":"2026-04-01 13:39:06"}}
 {"level":"warn","message":"Access denied: no valid token provided","metadata":{"metadata":{"requestId":"80da6ecf-513d-4097-93bc-423b1b455fb0"},"timestamp":"2026-04-01 13:39:06"}}
+{"level":"info","message":"OpsTrack Server is running on port 5000","metadata":{"metadata":{"environment":"development","port":"5000"},"timestamp":"2026-04-01 14:51:21"}}
+{"level":"info","message":"OpsTrack Server is running on port 5000","metadata":{"metadata":{"environment":"development","port":"5000"},"timestamp":"2026-04-01 15:04:02"}}
+{"level":"info","message":"OpsTrack Server is running on port 5000","metadata":{"metadata":{"environment":"development","port":"5000"},"timestamp":"2026-04-01 15:04:16"}}
+{"level":"info","message":"OpsTrack Server is running on port 5000","metadata":{"metadata":{"environment":"development","port":"5000"},"timestamp":"2026-04-01 15:05:58"}}
+{"level":"warn","message":"Validation failed","metadata":{"metadata":{"code":"ERR_VAL_INVALID_PAYLOAD","errors":[{"field":"email","message":"Invalid email format"},{"field":"password","message":"Invalid input: expected string, received undefined"}],"requestId":"0d49cb8f-79ce-4ac9-8bc9-275a3cd80ce9"},"timestamp":"2026-04-01 15:05:59"}}
+{"level":"warn","message":"Access denied: no valid token provided","metadata":{"metadata":{"requestId":"53f944e3-f490-420c-807b-5c8c44b0d441"},"timestamp":"2026-04-01 15:05:59"}}
+{"level":"warn","message":"Access denied: no valid token provided","metadata":{"metadata":{"requestId":"7c88dd7b-74d3-4bd2-a35a-3b2613930a7e"},"timestamp":"2026-04-01 15:05:59"}}
+{"level":"warn","message":"Access denied: no valid token provided","metadata":{"metadata":{"requestId":"f7dec802-7a23-46e3-a6d0-f93a8759651b"},"timestamp":"2026-04-01 15:05:59"}}
+{"level":"info","message":"User created","metadata":{"metadata":{"createdBy":8,"email":"integration.disabled.1775073959404@opstrack.mil","requestId":"80bf544a-aec1-4d29-aa3a-74e69aa438a8","userId":211},"timestamp":"2026-04-01 15:05:59"}}
+{"level":"info","message":"User updated","metadata":{"metadata":{"requestId":"f2a7da4f-eeb3-4eb0-859a-2c3432fa07ff","updatedBy":8,"userId":"211"},"timestamp":"2026-04-01 15:05:59"}}
+{"level":"warn","message":"Login denied: account deactivated","metadata":{"metadata":{"requestId":"a5fbcaee-0ded-400c-885f-1475de91ccdb","userId":211},"timestamp":"2026-04-01 15:05:59"}}
+{"level":"warn","message":"Audit access denied: non-admin user","metadata":{"metadata":{"requestId":"8e84cb69-3206-47aa-8f35-14e9796ae561","userId":7},"timestamp":"2026-04-01 15:05:59"}}
+{"level":"warn","message":"Access denied: insufficient role","metadata":{"metadata":{"requestId":"6c0dee25-9eb5-4813-bd35-95bc402bed3f","requiredRole":"ADMIN","userId":7,"userRole":"MEMBER"},"timestamp":"2026-04-01 15:05:59"}}
+{"level":"info","message":"User created","metadata":{"metadata":{"createdBy":8,"email":"integration.pvt.1775073959404@opstrack.mil","requestId":"01e1297d-ae09-4ffa-b6a2-c93393dd2204","userId":212},"timestamp":"2026-04-01 15:05:59"}}
+{"level":"warn","message":"Access denied: insufficient clearance","metadata":{"metadata":{"requestId":"1bbb7aed-0a10-4732-b7d7-7996ebf2a1ee","requiredClearance":"SECRET","userClearance":"UNCLASSIFIED","userId":212},"timestamp":"2026-04-01 15:05:59"}}
+{"level":"info","message":"User created","metadata":{"metadata":{"createdBy":8,"email":"integration.dup.1775073959404@opstrack.mil","requestId":"258f0f69-0e80-457d-8d79-40a31a228c2c","userId":213},"timestamp":"2026-04-01 15:05:59"}}
+{"level":"warn","message":"User creation failed: duplicate email","metadata":{"metadata":{"email":"integration.dup.1775073959404@opstrack.mil","requestId":"cbd3e7d9-5a36-4685-8919-eefe96dee880"},"timestamp":"2026-04-01 15:06:00"}}
+{"level":"warn","message":"Task not found","metadata":{"metadata":{"requestId":"bf191778-98d6-487e-ad37-0edbcedd0d4f","taskId":"999999","userId":7},"timestamp":"2026-04-01 15:06:00"}}
+{"level":"warn","message":"Task not found during update","metadata":{"metadata":{"requestId":"28d0dd9e-37c9-48cf-9202-601e43c678dc","taskId":"999999","userId":7},"timestamp":"2026-04-01 15:06:00"}}
+{"level":"warn","message":"Invalid task id during update","metadata":{"metadata":{"requestId":"4c5f9764-84a3-4cfa-80a0-5d2ee84b2513","taskId":"abc","userId":7},"timestamp":"2026-04-01 15:06:00"}}
+{"level":"warn","message":"Task not found during delete","metadata":{"metadata":{"requestId":"691f372c-8443-4df6-90ca-d364d61b1609","taskId":"999999","userId":8},"timestamp":"2026-04-01 15:06:00"}}
+{"level":"warn","message":"Invalid task id during delete","metadata":{"metadata":{"requestId":"ee239b41-12d0-40a9-a30c-f234baaccc10","taskId":"abc","userId":8},"timestamp":"2026-04-01 15:06:00"}}
+{"level":"warn","message":"Access denied: insufficient role","metadata":{"metadata":{"requestId":"421fe98a-86ad-406e-87cb-b575542e9997","requiredRole":"ADMIN","userId":7,"userRole":"MEMBER"},"timestamp":"2026-04-01 15:06:00"}}
+{"level":"warn","message":"User not found","metadata":{"metadata":{"requestId":"51aeaece-01eb-446b-a1b8-076b7beb591e","requesterId":8,"userId":"999999"},"timestamp":"2026-04-01 15:06:00"}}
+{"level":"info","message":"User created","metadata":{"metadata":{"createdBy":8,"email":"integration.updateable.1775073959404@opstrack.mil","requestId":"d5ed6134-d8d9-4cb2-be1d-b358ac6f758a","userId":215},"timestamp":"2026-04-01 15:06:00"}}
+{"level":"info","message":"User updated","metadata":{"metadata":{"requestId":"da361bfa-91eb-4b77-a830-fcf71aa9b4b9","updatedBy":8,"userId":"215"},"timestamp":"2026-04-01 15:06:00"}}
+{"level":"info","message":"User created","metadata":{"metadata":{"createdBy":8,"email":"integration.deactivate.1775073959404@opstrack.mil","requestId":"688a84aa-204e-4477-9278-ced934833b54","userId":216},"timestamp":"2026-04-01 15:06:00"}}
+{"level":"info","message":"User updated","metadata":{"metadata":{"requestId":"18134414-2061-4edb-998e-c9706d5fc290","updatedBy":8,"userId":"216"},"timestamp":"2026-04-01 15:06:00"}}
+{"level":"warn","message":"Access denied: insufficient role","metadata":{"metadata":{"requestId":"4bcd1370-b8b6-4b41-9656-9a314222ff86","requiredRole":"ADMIN","userId":7,"userRole":"MEMBER"},"timestamp":"2026-04-01 15:06:00"}}
+{"level":"info","message":"OpsTrack Server is running on port 5000","metadata":{"metadata":{"environment":"development","port":"5000"},"timestamp":"2026-04-01 15:06:24"}}

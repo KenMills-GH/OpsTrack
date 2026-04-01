@@ -32,5 +32,10 @@
   "devDependencies": {
     "nodemon": "^3.1.7",
     "supertest": "^7.1.1"
+  },
+  "overrides": {
+    "path-to-regexp": "0.1.13",
+    "picomatch": "2.3.2",
+    "brace-expansion": "5.0.5"
   }
 }
