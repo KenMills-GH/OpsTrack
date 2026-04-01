@@ -19,22 +19,30 @@ dotenv.config();
 
 const app = express();
 
-const REQUIRED_ENV_VARS = [
+const REQUIRED_ENV_VARS = ["JWT_SECRET"];
+const REQUIRED_SPLIT_DB_ENV_VARS = [
   "DB_USER",
   "DB_HOST",
   "DB_DATABASE",
   "DB_PASSWORD",
-  "JWT_SECRET",
 ];
 
 const validateEnvironment = () => {
-  const missingVariables = REQUIRED_ENV_VARS.filter(
+  const missingCoreVariables = REQUIRED_ENV_VARS.filter(
     (envKey) => !process.env[envKey],
   );
 
-  if (missingVariables.length > 0) {
+  const hasDatabaseUrl = Boolean(process.env.DATABASE_URL);
+  const missingSplitDbVariables = hasDatabaseUrl
+    ? []
+    : REQUIRED_SPLIT_DB_ENV_VARS.filter((envKey) => !process.env[envKey]);
+
+  if (missingCoreVariables.length > 0 || missingSplitDbVariables.length > 0) {
     throw new Error(
-      `Missing required environment variables: ${missingVariables.join(", ")}`,
+      `Missing required environment variables: ${[
+        ...missingCoreVariables,
+        ...missingSplitDbVariables,
+      ].join(", ")}`,
     );
   }
 };

@@ -30,13 +30,18 @@ Set all of the following in your hosting provider:
 
 - `NODE_ENV=production`
 - `PORT=5000` (or provider default)
+- `DATABASE_URL=<Neon connection string>`
+- `DB_SSL=true`
+- `JWT_SECRET=<long-random-secret>`
+- `CORS_ORIGIN=<your-frontend-url>`
+
+Optional fallback if you do not want to use a single connection string:
+
 - `DB_USER=...`
 - `DB_HOST=...`
 - `DB_DATABASE=...`
 - `DB_PASSWORD=...`
 - `DB_PORT=5432`
-- `JWT_SECRET=<long-random-secret>`
-- `CORS_ORIGIN=<your-frontend-url>`
 
 Reference template: `.env.example`
 
@@ -56,6 +61,6 @@ Reference template: `.env.example`
 2. CORS blocked in browser:
    - `CORS_ORIGIN` must exactly match frontend URL (including `https`).
 3. 500 database errors:
-   - Verify DB env vars and that `init.sql` was run.
+   - Verify `DATABASE_URL` or the split `DB_*` env vars and that `init.sql` was run.
 4. Login rate-limit behavior:
    - Expected in production after repeated failures.

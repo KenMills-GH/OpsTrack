@@ -6,13 +6,25 @@ dotenv.config();
 
 const { Pool } = pg;
 
+const databaseConfig = process.env.DATABASE_URL
+  ? {
+      connectionString: process.env.DATABASE_URL,
+      ssl:
+        process.env.DB_SSL === "true"
+          ? { rejectUnauthorized: false }
+          : undefined,
+    }
+  : {
+      user: process.env.DB_USER,
+      host: process.env.DB_HOST,
+      database: process.env.DB_DATABASE,
+      password: process.env.DB_PASSWORD,
+      port: Number(process.env.DB_PORT || 5432),
+    };
+
 // Initialize the pool using your .env variables
 const pool = new Pool({
-  user: process.env.DB_USER,
-  host: process.env.DB_HOST,
-  database: process.env.DB_DATABASE,
-  password: process.env.DB_PASSWORD,
-  port: process.env.DB_PORT,
+  ...databaseConfig,
   max: 20,
   min: 2,
   idleTimeoutMillis: 30000,
